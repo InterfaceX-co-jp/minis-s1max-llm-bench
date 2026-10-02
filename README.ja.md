@@ -16,6 +16,28 @@ Minisforum S1 Max(AMD Ryzen AI Max+ 395、統合メモリ 128GB)で **Qwen3.8-Fl
 | 動作環境 | Windows(この Minisforum) | macOS(Apple Silicon)または NVIDIA GPU(cc ≥ 8.9)— **この AMD iGPU ではネイティブ動作しない** |
 | 指標 | llama.cpp ログから prefill / decode tok/s | ストリーミング API 経由で prefill / decode tok/s |
 
+## クイックスタート(Vulkan、MS-S1 MAX)
+
+Windows での最初の1測定は公式 llama.cpp **Windows x64 (Vulkan)** ビルドが最短。ROCm 不要で、`llama-bench` が重要な2数値(pp512=prefill / tg256=decode)を直接出します。
+
+```powershell
+# 1. 公式 Vulkan ビルドを取得(llama-cli / llama-bench / llama-server が bin\ に入る)
+.\scripts\download-llamacpp.ps1
+
+# 2. iGPU が見えているか確認(期待: Vulkan0 - AMD Radeon 8060S)
+.\bin\**\llama-cli.exe --list-devices
+
+# 3. 単一 gguf をベンチ(models\ から自動選択も可)
+.\scripts\run-bench-vulkan.ps1 -Model C:\models\model.gguf -ngl 999
+# プロンプト長/生成長スイープ、3リピート:
+.\scripts\run-bench-vulkan.ps1 -Model C:\models\model.gguf -PromptSizes 512,4096 -GenSizes 256 -Repeats 3
+
+# 4. サーバとして起動(OpenAI互換、Cursor/OpenCode から利用可)
+.\bin\**\llama-server.exe -m C:\models\model.gguf -ngl 999 -c 32768 --port 8080
+```
+
+Strix Halo では `-ngl 999` が基本。128GB UMA を共有するため、BIOS の VRAM carve-out なしでモデル全体を 8060S 側に置けます。ビルドが MTP/投機デコード対応なら **あり/なし両方**測ってください(このハードでは decode が 3〜6割変わります)。
+
 ## セットアップ(llama.cpp、Minisforum 本体)
 
 ```powershell
@@ -58,6 +80,25 @@ Minisforum S1 Max(AMD Ryzen AI Max+ 395、統合メモリ 128GB)で **Qwen3.8-Fl
 | `prefill_tps` | プロンプト処理速度(tokens/s) |
 | `decode_tps` | 生成速度(tokens/s)— メモリ帯域が効く指標 |
 | `peak_mem_mib` | ピーク使用メモリ |
+
+## 参考数値(Strix Halo、128GB)
+
+AMD Strix Halo での Qwen3.8-Flash-Next エンジン比較(70W、[r/LocalLLM 投稿](https://www.reddit.com/r/LocalLLM/comments/1wu0m53/benchmarks_best_engine_for_qwen_38flashnext_on/)):
+
+| エンジン | 重み | Prefill t/s | Decode t/s | MTP accept |
+| --- | --- | ---: | ---: | ---: |
+| Halogen 0.15.1(.hgn、クローズド) | native v2 | 1,191 | 39.4 | 85% |
+| [gufo 0.3.0](https://github.com/gufo-org/gufo)(ROCm) | UD-Q4_K_XL | 1,075 | 34.1 | 77% |
+| CIRU(MTP 3) | CIRU IU4 | 808 | 30.2 | 64% |
+| strixllama(llama.cpp フォーク) | UD-Q4_K_XL | 716 | 29.7 | 71% |
+| llama.cpp(Vulkan、Unsloth ビルド) | UD-Q4_K_XL | 314 | 28.4 | 56% |
+| llama.cpp(ROCm、Unsloth ビルド) | UD-Q4_K_XL | 285 | 20.5 | 50% |
+
+要点: このハードでは [gufo](https://github.com/gufo-org/gufo)(Strix Halo 専用エンジン、[Windows ポート](https://github.com/pixmaate/gufo)あり)がオープンソース最速で、素の llama.cpp を大きく上回る。gufo 用重みは **Unsloth UD-Q4_K_XL + 共有 MTP ヘッド**で、本リポジトリからもダウンロード可能:
+
+```powershell
+.\scripts\download-model.ps1 -Unsloth -OutDir D:\models\qwen38-flash-next
+```
 
 ## 注意
 

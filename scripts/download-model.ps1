@@ -10,7 +10,9 @@ param(
     [string]$Quant = 'Q4_K_M',
     [string]$OutDir = "$PSScriptRoot\..\models\qwen38-flash-next",
     [int]$Shards = 7,
-    [switch]$SkipPle
+    [switch]$SkipPle,
+    # Unsloth UD-Q4_K_XL + shared MTP head — the checkpoint gufo / strixllama use.
+    [switch]$Unsloth
 )
 
 $ErrorActionPreference = 'Stop'
@@ -36,6 +38,26 @@ function Get-File {
     # curl.exe is fast & resilient; available on Win10/11 and pwsh
     & curl.exe -L --fail --retry 5 --retry-delay 3 -C - -o $Dest $Url
     if ($LASTEXITCODE -ne 0) { throw "Download failed: $Url" }
+}
+
+if ($Unsloth) {
+    # Unsloth UD-Q4_K_XL (single-file, sharded) + shared MTP head (Q8_0).
+    # Used by gufo / strixllama on Strix Halo. See README "gufo" section.
+    $repo2 = 'unsloth/Qwen3.8-Flash-Next-GGUF'
+    $rev   = '38bb39ee97821de2c9009abb7e93950eec396e66'
+    $base2 = "https://huggingface.co/$repo2/resolve/$rev"
+    $udDir = Join-Path $OutDir 'UD-Q4_K_XL'
+    New-Item -ItemType Directory -Force -Path $udDir | Out-Null
+    # UD-Q4_K_XL is sharded as ...-00001-of-00003.gguf (adjust count if the repo changes)
+    for ($i = 1; $i -le 3; $i++) {
+        $n = '{0:D5}' -f $i
+        Get-File "$base2/UD-Q4_K_XL/UD-Q4_K_XL-$n-of-00003.gguf" (Join-Path $udDir "UD-Q4_K_XL-$n-of-00003.gguf")
+    }
+    $mtpDir = Join-Path $OutDir 'MTP'
+    New-Item -ItemType Directory -Force -Path $mtpDir | Out-Null
+    Get-File "$base2/MTP/mtp-Qwen3.8-Flash-Next-shared-Q8_0.gguf" (Join-Path $mtpDir 'mtp-Qwen3.8-Flash-Next-shared-Q8_0.gguf')
+    Write-Host "Done. Unsloth UD-Q4_K_XL + MTP head in $udDir / $mtpDir" -ForegroundColor Green
+    return
 }
 
 # Backbone shards 00001..00006, PLE acts as shard 00007

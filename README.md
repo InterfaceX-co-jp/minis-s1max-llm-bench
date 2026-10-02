@@ -16,6 +16,28 @@ Benchmark **Qwen3.8-Flash-Next** inference speed on a Minisforum S1 Max (AMD Ryz
 | Runs on | Windows (this Minisforum) | macOS (Apple Silicon) or NVIDIA GPU (cc ≥ 8.9) — **not** natively on this AMD iGPU |
 | Metrics | prefill / decode tok/s from llama.cpp logs | prefill / decode tok/s via streamed API |
 
+## Quick start (Vulkan, MS-S1 MAX)
+
+The simplest first measurement on Windows: the official llama.cpp **Windows x64 (Vulkan)** build — no ROCm needed, and `llama-bench` gives the two key numbers (pp512 prefill / tg256 decode) directly.
+
+```powershell
+# 1. Get the official Vulkan build (llama-cli / llama-bench / llama-server land in bin\)
+.\scripts\download-llamacpp.ps1
+
+# 2. Verify the iGPU is visible (expect: Vulkan0 - AMD Radeon 8060S)
+.\bin\**\llama-cli.exe --list-devices
+
+# 3. Benchmark any single gguf (auto-picks one from models\ if omitted)
+.\scripts\run-bench-vulkan.ps1 -Model C:\models\model.gguf -ngl 999
+# sweep prompt sizes / decode sizes, 3 repeats:
+.\scripts\run-bench-vulkan.ps1 -Model C:\models\model.gguf -PromptSizes 512,4096 -GenSizes 256 -Repeats 3
+
+# 4. Serve it (OpenAI-compatible, for Cursor/OpenCode etc.)
+.\bin\**\llama-server.exe -m C:\models\model.gguf -ngl 999 -c 32768 --port 8080
+```
+
+`-ngl 999` is right on Strix Halo: the 128 GB UMA is shared, so the whole model can go to the 8060S without a BIOS VRAM carve-out. If your build supports MTP/speculative decoding, measure with and without (`-ExtraArgs '--spec-type','draft-mtp'` vs. default) — on this hardware MTP changes decode by ~30-60%.
+
 ## Setup (llama.cpp, on the Minisforum)
 
 ```powershell
@@ -50,6 +72,25 @@ The script starts `tensorfold serve`, waits for the API (first run downloads the
 - `results\tensorfold-<checkpoint>-<timestamp>.csv` — prefill/decode tok/s (TensorFold)
 - `results\log-*.txt` — raw llama.cpp logs
 - Summary table: median decode tok/s per context length
+
+## Reference numbers (Strix Halo, 128 GB)
+
+Community benchmark of engines for Qwen3.8-Flash-Next on AMD Strix Halo (70 W, [r/LocalLLM post](https://www.reddit.com/r/LocalLLM/comments/1wu0m53/benchmarks_best_engine_for_qwen_38flashnext_on/)):
+
+| Engine | Weights | Prefill t/s | Decode t/s | MTP accept |
+| --- | --- | ---: | ---: | ---: |
+| [Halogen 0.15.1](https://github.com/) (.hgn, closed) | native v2 | 1,191 | 39.4 | 85% |
+| [gufo 0.3.0](https://github.com/gufo-org/gufo) (ROCm) | UD-Q4_K_XL | 1,075 | 34.1 | 77% |
+| CIRU (MTP 3) | CIRU IU4 | 808 | 30.2 | 64% |
+| strixllama (llama.cpp fork) | UD-Q4_K_XL | 716 | 29.7 | 71% |
+| llama.cpp (Vulkan, Unsloth build) | UD-Q4_K_XL | 314 | 28.4 | 56% |
+| llama.cpp (ROCm, Unsloth build) | UD-Q4_K_XL | 285 | 20.5 | 50% |
+
+Takeaways: on this hardware [gufo](https://github.com/gufo-org/gufo) — a Strix-Halo-specific engine with a [Windows port](https://github.com/pixmaate/gufo) — is the fastest open option and far ahead of stock llama.cpp. Its checkpoint is **Unsloth UD-Q4_K_XL + shared MTP head**, which this repo can also download:
+
+```powershell
+.\scripts\download-model.ps1 -Unsloth -OutDir D:\models\qwen38-flash-next
+```
 
 ## Notes
 
