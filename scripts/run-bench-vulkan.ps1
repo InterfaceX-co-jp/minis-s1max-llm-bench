@@ -56,7 +56,10 @@ $nArg = ($GenSizes | ForEach-Object { $_ }) -join ','
 # -o csv is supported by recent llama-bench; fall back to markdown if the flag fails
 $rawArgs = @('-m', $Model, '-ngl', "$Ngl", '-p', $pArg, '-n', $nArg, '-r', "$Repeats") + $ExtraArgs
 Write-Host "llama-bench $($rawArgs -join ' ')" -ForegroundColor Cyan
-$raw = & $LlamaBench @rawArgs + @('-o','csv') 2>&1 | Out-String
+# PS5.1 turns native stderr writes into errors under Stop preference; relax locally.
+$ErrorActionPreference = 'Continue'
+$argsCsv = $rawArgs + @('-o', 'csv')
+$raw = & $LlamaBench @argsCsv 2>&1 | Out-String
 if ($raw -notmatch ',') {   # probably usage error about -o; retry without
     $raw = & $LlamaBench @rawArgs 2>&1 | Out-String
 }

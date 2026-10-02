@@ -19,9 +19,13 @@ param(
 $ErrorActionPreference = 'Stop'
 
 if (-not $ZipUrl) {
-    $api = 'https://api.github.com/repos/ggml-org/llama.cpp/releases/latest'
-    $rel = Invoke-RestMethod -Uri $api -Headers @{ 'User-Agent' = 'minis-bench' }
-    $asset = $rel.assets | Where-Object { $_.name -match $AssetPattern } | Select-Object -First 1
+    # /releases/latest can return a nightly stub; walk the release list instead.
+    $rels = Invoke-RestMethod 'https://api.github.com/repos/ggml-org/llama.cpp/releases?per_page=10' -Headers @{ 'User-Agent' = 'minis-bench' }
+    $asset = $null
+    foreach ($rel in $rels) {
+        $asset = $rel.assets | Where-Object { $_.name -match $AssetPattern } | Select-Object -First 1
+        if ($asset) { break }
+    }
     if (-not $asset) {
         Write-Host "Available assets:" -ForegroundColor Yellow
         $rel.assets | ForEach-Object { Write-Host "  $($_.name)" }

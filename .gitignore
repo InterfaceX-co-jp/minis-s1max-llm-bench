@@ -1,0 +1,7 @@
+﻿# local weights & big binaries
+models/
+*.gguf
+# llama.cpp build outputs (fetched by script)
+bin/
+# raw logs
+results/*.log

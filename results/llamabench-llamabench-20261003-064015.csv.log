@@ -1,0 +1,17 @@
+﻿llama-bench.exe : load_backend: loaded RPC backend from C:\Code\interfacex\minis-s1max-llm-bench\bin\ggml-rpc.
+dll
+At C:\Code\interfacex\minis-s1max-llm-bench\scripts\run-bench-vulkan.ps1:62 char:8
++ $raw = & $LlamaBench @argsCsv 2>&1 | Out-String
++        ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (load_backend: l...in\ggml-rpc.dll:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ggml_vulkan: Found 1 Vulkan devices:
+ggml_vulkan: 0 = AMD Radeon(TM) 8060S Graphics (AMD proprietary driver) | uma: 1 | fp16: 1 | bf16: 0 | fp4: 0 
+| warp size: 64 | shared memory: 32768 | int dot: 1 | matrix cores: KHR_coopmat
+load_backend: loaded Vulkan backend from C:\Code\interfacex\minis-s1max-llm-bench\bin\ggml-vulkan.dll
+load_backend: loaded CPU backend from C:\Code\interfacex\minis-s1max-llm-bench\bin\ggml-cpu-zen4.dll
+build_commit,build_number,cpu_info,gpu_info,backends,model_filename,model_type,model_size,model_n_params,n_batch,n_ubatch,n_threads,cpu_mask,cpu_strict,poll,type_k,type_v,n_gpu_layers,n_cpu_moe,split_mode,main_gpu,no_kv_offload,flash_attn,devices,tensor_split,tensor_buft_overrides,load_mode,lazy_mode,embeddings,no_op_offload,no_host,repack,fit_target,fit_min_ctx,n_prompt,n_gen,n_depth,test_time,avg_ns,stddev_ns,avg_ts,stddev_ts
+"631109b34","11351","AMD RYZEN AI MAX+ 395 w/ Radeon 8060S          ","AMD Radeon(TM) 8060S Graphics","Vulkan","C:\Code\interfacex\minis-s1max-llm-bench\models\smoke\qwen2.5-0.5b-instruct-q4_k_m.gguf","qwen2 1B Q4_K - Medium","485452288","630167424","2048","512","16","0x0","0","50","f16","f16","999","0","layer","0","0","-1","auto","0.00","none","auto","auto","0","0","0","1","0","0","512","0","0","2026-10-02T21:40:16Z","49158400","1151876","10418.170586","244.118005"
+"631109b34","11351","AMD RYZEN AI MAX+ 395 w/ Radeon 8060S          ","AMD Radeon(TM) 8060S Graphics","Vulkan","C:\Code\interfacex\minis-s1max-llm-bench\models\smoke\qwen2.5-0.5b-instruct-q4_k_m.gguf","qwen2 1B Q4_K - Medium","485452288","630167424","2048","512","16","0x0","0","50","f16","f16","999","0","layer","0","0","-1","auto","0.00","none","auto","auto","0","0","0","1","0","0","0","256","0","2026-10-02T21:40:19Z","1044756800","3300915","245.034325","0.774188"
+
